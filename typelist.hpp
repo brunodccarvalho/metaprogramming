@@ -8,6 +8,7 @@
 #include "generic.hpp"
 
 #include <type_traits>
+#include <tuple>
 
 /**
  * A template struct enclosing an ordered list
@@ -20,12 +21,6 @@
 template <typename... Ts>
 struct typelist;
 
-/**
- * Concatenates multiple
- * @tparam Ts
- */
-template <typename... Ts>
-struct typelist_join;
 
 
 /**
@@ -107,23 +102,6 @@ struct typelist<Ts...>::get<0, T, L...> {
 
 
 
-
-
-/**
- * @IMPLEMENTATION typelist_join
- */
-template <typename... Ts>
-struct typelist_join {
-    using list = typename join<Ts...>::type;
-};
-
-template <typename... Ts>
-using typelist_join_t = typename typelist_join<Ts...>::list;
-
-
-
-
-
 /**
  * @IMPLEMENTATION filter
  */
@@ -154,20 +132,20 @@ using b_exclude_if = std::conditional_t<Predicate<B, Args...>::value, typelist<>
 // include_each
 // Returns a typelist with each individual type filtered, inclusion if matching
 template <template <typename...> typename Predicate, typename... Args>
-using include_each = typename typelist_join<include_if<Predicate, Args>...>::list;
+using include_each = typename join<include_if<Predicate, Args>...>::type;
 
 // exclude_each
 // Returns a typelist with each individual type filtered, exclusion if matching
 template <template <typename...> typename Predicate, typename... Args>
-using exclude_each = typename typelist_join<exclude_if<Predicate, Args>...>::list;
+using exclude_each = typename join<exclude_if<Predicate, Args>...>::type;
 
 // b_include_each
 template <typename B, template <typename, typename...> typename Predicate, typename... Args>
-using b_include_each = typename typelist_join<b_include_if<B, Predicate, Args>...>::list;
+using b_include_each = typename join<b_include_if<B, Predicate, Args>...>::type;
 
 // b_exclude_each
 template <typename B, template <typename, typename...> typename Predicate, typename... Args>
-using b_exclude_each = typename typelist_join<b_exclude_if<B, Predicate, Args>...>::list;
+using b_exclude_each = typename join<b_exclude_if<B, Predicate, Args>...>::type;
 
 // Common filters
 template <typename... Args> // Exclude void types

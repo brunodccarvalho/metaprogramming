@@ -1,4 +1,6 @@
+#include <cassert>
 #include <iostream>
+#include <string>
 #include <typeinfo>
 
 #include "typelist.hpp"
@@ -7,7 +9,7 @@ using w_empty = typelist<>;
 using w_ints = typelist<short, int, long, long long>;
 using w_doubles = typelist<float, double, long double>;
 using w_chars = typelist<char, wchar_t, char*>;
-using w_bools = typelist<bool, bool&>;
+using w_bools = typelist<bool, bool&, bool&&>;
 using w_random = typelist<short* const* const, const int&, long&&, volatile double>;
 
 using w_many = join_t<w_empty, w_ints, w_chars, w_doubles, w_empty>;
@@ -19,6 +21,10 @@ using w_push_back = push_back_t<w_ints, const int, bool**>;
 using w_push_front = push_front_t<w_chars, const int, bool**>;
 using w_pop_back = pop_back_t<w_ints>;
 using w_pop_front = pop_front_t<w_ints>;
+
+using w_some = typelist<bool, int, char, double>;
+using t_ints = instance_t<w_some, std::tuple>;
+using t_reve = reverse_t<instance_t<w_some, std::tuple>>;
 
 void print_basic_types() {
     w_ints::get_t<0> ints0 = 73;
@@ -46,7 +52,7 @@ void print_basic_types() {
     std::cout << std::endl;
 }
 
-void print_demangler() {
+void print_demangler_1() {
     w_empty empty;
     w_ints ints;
     w_doubles doubles;
@@ -107,10 +113,27 @@ void print_demangler_2() {
     std::cout << std::endl;
 }
 
+void print_demangler_3() {
+    t_ints ints;
+    t_reve reve;
+
+    std::string s_ints = typeid(ints).name();
+    std::string s_reve = typeid(reve).name();
+
+    assert((std::is_same<t_ints, std::tuple<bool, int, char, double>>::value));
+    assert((std::is_same<t_reve, std::tuple<double, char, int, bool>>::value));
+
+    std::cout << "$ Demangler 3" << std::endl;
+    std::cout << "s_ints = " << s_ints << std::endl;
+    std::cout << "s_reve = " << s_reve << std::endl;
+    std::cout << std::endl;
+}
+
 int main(){
     std::cout << "Hello, World!" << std::endl << std::endl;
     print_basic_types();
-    print_demangler();
+    print_demangler_1();
     print_demangler_2();
+    print_demangler_3();
     return 0;
 }

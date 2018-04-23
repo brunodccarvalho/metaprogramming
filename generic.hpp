@@ -144,9 +144,9 @@ template <typename...>
 struct back;
 
 template <template <typename...> typename C,
-          typename B, typename... S>
-struct back<C<S..., B>> {
-    using type = B;
+          typename... S>
+struct back<C<S...>> {
+    using type = front_t<reverse_t<C<S...>>>;
 };
 
 template <typename C>
@@ -166,8 +166,8 @@ struct instance<C<S...>, Target<>> {
     using type = Target<S...>;
 };
 
-template <typename C, typename Target>
-using instance_t = typename instance<C, Target>::type;
+template <typename C, template <typename...> typename Target>
+using instance_t = typename instance<C, Target<>>::type;
 
 
 
