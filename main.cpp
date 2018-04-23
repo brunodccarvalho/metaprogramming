@@ -120,8 +120,8 @@ void print_demangler_3() {
     std::string s_ints = typeid(ints).name();
     std::string s_reve = typeid(reve).name();
 
-    assert((std::is_same<t_ints, std::tuple<bool, int, char, double>>::value));
-    assert((std::is_same<t_reve, std::tuple<double, char, int, bool>>::value));
+    static_assert((std::is_same<t_ints, std::tuple<bool, int, char, double>>::value));
+    static_assert((std::is_same<t_reve, std::tuple<double, char, int, bool>>::value));
 
     std::cout << "$ Demangler 3" << std::endl;
     std::cout << "s_ints = " << s_ints << std::endl;

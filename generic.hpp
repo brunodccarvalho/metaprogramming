@@ -26,15 +26,9 @@ struct join<C<As...>, C<Bs...>, R...> {
     using type = typename join<C<As..., Bs...>, R...>::type;
 };
 
-/*
-template <template <typename...> typename T, typename... Ts>
-struct join<T<Ts>...> {
-    using type = T<Ts...>;
-};
-*/
-
 template <typename... Cs>
 using join_t = typename join<Cs...>::type;
+
 
 
 /**
@@ -168,6 +162,72 @@ struct instance<C<S...>, Target<>> {
 
 template <typename C, template <typename...> typename Target>
 using instance_t = typename instance<C, Target<>>::type;
+
+
+
+/**
+ * @UTILITY global filter (average)
+ * include_if, exclude_if, b_include_if, b_exclude_if
+ */
+template <template <typename...> typename C,
+          template <typename...> typename P, typename... Args>
+using include_if_t = std::conditional_t<P<Args...>::value, C<Args...>, C<>>;
+
+template <template <typename...> typename C,
+          template <typename...> typename P, typename... Args>
+using exclude_if_t = std::conditional_t<P<Args...>::value, C<>, C<Args...>>;
+
+template <template <typename...> typename C, typename B,
+          template <typename...> typename P, typename... Args>
+using b_include_if_t = std::conditional_t<P<B, Args...>::value, C<Args...>, C<>>;
+
+template <template <typename...> typename C, typename B,
+          template <typename...> typename P, typename... Args>
+using b_exclude_if_t = std::conditional_t<P<B, Args...>::value, C<>, C<Args...>>;
+
+
+
+/**
+ * @UTILITY foreach filter (easy)
+ * include_each, exclude_each, b_include_each, b_exclude_each
+ */
+template <template <typename...> typename C,
+template <typename...> typename P, typename... Args>
+using include_each_t = join_t<include_if_t<C, P, Args>...>;
+
+template <template <typename...> typename C,
+template <typename...> typename P, typename... Args>
+using exclude_each_t = join_t<exclude_if_t<C, P, Args>...>;
+
+template <template <typename...> typename C, typename B,
+template <typename...> typename P, typename... Args>
+using b_include_each_t = join_t<b_include_if_t<C, B, P, Args>...>;
+
+template <template <typename...> typename C, typename B,
+template <typename...> typename P, typename... Args>
+using b_exclude_each_t = join_t<b_exclude_if_t<C, B, P, Args>...>;
+
+
+
+/**
+ * @SPECIALIZATION common filters (average)
+ */
+template <template <typename...> typename C, typename... Args>
+using exclude_void_t = exclude_each_t<C, std::is_void, Args...>;
+
+template <template <typename...> typename C, typename... Args>
+using exclude_empty_t = exclude_each_t<C, std::is_empty, Args...>;
+
+template <template <typename...> typename C, typename B, typename... Args>
+using include_subclass_t = b_include_each_t<C, B, std::is_base_of, Args...>;
+
+template <template <typename...> typename C, typename B, typename... Args>
+using exclude_subclass_t = b_exclude_each_t<C, B, std::is_base_of, Args...>;
+
+
+
+
+
 
 
 
