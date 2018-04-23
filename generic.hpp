@@ -97,13 +97,13 @@ using push_back_t = typename push_back<C, R...>::type;
 
 
 /**
- * @UTILITY pop_front, pop_back (easy)
+ * @UTILITY pop_front (easy), pop_back (hard)
  */
 template <typename...>
 struct pop_front;
 
 template <template <typename...> typename C,
-typename F, typename... S>
+          typename F, typename... S>
 struct pop_front<C<F, S...>> {
     using type = C<S...>;
 };
@@ -115,9 +115,9 @@ template <typename...>
 struct pop_back;
 
 template <template <typename...> typename C,
-typename L, typename... S>
-struct pop_back<C<S..., L>> {
-    using type = C<S...>;
+          typename... S>
+struct pop_back<C<S...>> {
+    using type = reverse_t<pop_front_t<reverse_t<C<S...>>>>; // Ar, I'm a pirate!
 };
 
 template <typename C>
@@ -154,9 +154,20 @@ using back_t = typename back<C>::type;
 
 
 
+/**
+ * @UTILITY instance (average)
+ */
+template <typename...>
+struct instance;
 
+template <template <typename...> typename C,
+          typename... S, template <typename...> typename Target>
+struct instance<C<S...>, Target<>> {
+    using type = Target<S...>;
+};
 
-
+template <typename C, typename Target>
+using instance_t = typename instance<C, Target>::type;
 
 
 
