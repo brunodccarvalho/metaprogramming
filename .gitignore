@@ -1,0 +1,8 @@
+# CLion
+CMakeLists.txt
+cmake-build-debug/
+.idea/
+
+# Executables
+*.o
+*.exe
