@@ -1,9 +1,14 @@
-#include <cassert>
 #include <iostream>
 #include <string>
+#include <tuple>
+
 #include <typeinfo>
+#include <cassert>
 
 #include "typelist.hpp"
+#include "generic.hpp"
+
+using namespace generic;
 
 using w_empty = typelist<>;
 using w_ints = typelist<short, int, long, long long>;
