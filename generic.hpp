@@ -28,7 +28,10 @@ constexpr bool is_specialization_of_v = is_specialization_of<T, C>::value;
 
 /**
  * @UTILITY is_template_instantiation (average)
- * Warning: Only accepts certain formats
+ * Warning: Only accepts certain formats:
+ * typename...
+ * template <typename...> typename...
+ * template <typename...> typename, typename...
  */
 template <typename T>
 struct is_template_instantiation {
@@ -66,15 +69,14 @@ template <typename...>
 struct join;
 
 template <template <typename...> typename C,
-          typename... S>
-struct join<C<S...>> {
-    using type = C<S...>;
-};
-
-template <template <typename...> typename C,
           typename... As, typename... Bs, typename... R>
 struct join<C<As...>, C<Bs...>, R...> {
     using type = typename join<C<As..., Bs...>, R...>::type;
+};
+
+template <template <typename...> typename C, typename... S>
+struct join<C<S...>> {
+    using type = C<S...>;
 };
 
 template <typename... Cs>
@@ -87,7 +89,7 @@ using join_t = typename join<Cs...>::type;
 /**
  * @UTILITY reverse (average)
  */
-template <typename...>
+template <typename>
 struct reverse;
 
 template <typename...>
@@ -117,19 +119,19 @@ using reverse_t = typename reverse<C>::type;
 
 
 /**
- * @UTILITY transform (easy)
+ * @UTILITY map (easy)
  */
-template <template <typename...> typename Funct, typename...>
-struct transform;
+template <template <typename...> typename F, typename>
+struct map;
 
-template <template <typename...> typename Funct,
+template <template <typename...> typename F,
           template <typename...> typename C, typename... S>
-struct transform<Funct, C<S...>> {
-    using type = C<typename Funct<S>::type...>;
+struct map<F, C<S...>> {
+    using type = C<typename F<S>::type...>;
 };
 
-template <template <typename...> typename Funct, typename C>
-using transform_t = typename transform<Funct, C>::type;
+template <template <typename...> typename F, typename C>
+using map_t = typename map<F, C>::type;
 
 
 
@@ -137,7 +139,6 @@ using transform_t = typename transform<Funct, C>::type;
 
 /**
  * @UTILITY flatten (hard)
- * C<S1, S2, C<S3, S4>, C<S5...>, S6...> -> C<S1, S2, S3, S4, S5..., S6...>
  */
 template <typename>
 struct flatten;
@@ -149,14 +150,6 @@ template <template <typename...> typename C, typename... S,
           typename... T, typename... R>
 struct flatten_impl<C<S...>, C<T...>, R...> {
     using type = typename flatten_impl<C<S..., T...>, R...>::type;
-};
-
-template <template <typename...> typename C, typename... S,
-          typename T, typename... R>
-struct flatten_impl<C<S...>, T, R...> {
-    using type = typename flatten_impl<C<S..., T>, R...>::type;
-    using sfinae = typename std::enable_if<!is_specialization_of_v<T, C>>::type;
-    // if T is an instance of C, this is a substitution error.
 };
 
 template <template <typename...> typename C, typename... S>
@@ -174,16 +167,110 @@ using flatten_t = typename flatten<C>::type;
 
 
 
+template <typename>
+struct mixed_flatten;
+
+template <typename, typename...>
+struct mixed_flatten_impl;
+
+template <template <typename...> typename C, typename... S,
+          typename... T, typename... R>
+struct mixed_flatten_impl<C<S...>, C<T...>, R...> {
+    using type = typename mixed_flatten_impl<C<S..., T...>, R...>::type;
+};
+
+template <template <typename...> typename C, typename... S,
+          typename T, typename... R>
+struct mixed_flatten_impl<C<S...>, T, R...> {
+  private:
+    using sfinae = typename std::enable_if<!is_specialization_of_v<T, C>>::type;
+  public:
+    using type = typename mixed_flatten_impl<C<S..., T>, R...>::type;
+};
+
+template <template <typename...> typename C, typename... S>
+struct mixed_flatten_impl<C<S...>> {
+    using type = C<S...>;
+};
+
+template <template <typename...> typename C, typename... S>
+struct mixed_flatten<C<S...>> {
+    using type = typename mixed_flatten_impl<C<>, S...>::type;
+};
+
+template <typename C>
+using mixed_flatten_t = typename mixed_flatten<C>::type;
+
+
+
+template <typename>
+struct deep_flatten;
+
+template <typename, typename...>
+struct deep_flatten_impl;
+
+template <template <typename...> typename C, typename... S,
+          typename... T, typename... R>
+struct deep_flatten_impl<C<S...>, C<T...>, R...> {
+  private:
+    using deep = typename deep_flatten_impl<C<S...>, T...>::type;
+  public:
+    using type = typename deep_flatten_impl<deep, R...>::type;
+};
+
+template <template <typename...> typename C, typename... S,
+          typename T, typename... R>
+struct deep_flatten_impl<C<S...>, T, R...> {
+  private:
+    using sfinae = typename std::enable_if<!is_specialization_of_v<T, C>>::type;
+  public:
+    using type = typename deep_flatten_impl<C<S..., T>, R...>::type;
+};
+
+template <template <typename...> typename C, typename... S>
+struct deep_flatten_impl<C<S...>> {
+    using type = C<S...>;
+};
+
+template <template <typename...> typename C, typename... S>
+struct deep_flatten<C<S...>> {
+    using type = typename deep_flatten_impl<C<>, S...>::type;
+};
+
+template <typename C>
+using deep_flatten_t = typename deep_flatten<C>::type;
+
+
+
+
+
+/**
+ * @UTILITY transform (average)
+ */
+template <template <typename...> typename F, typename>
+struct transform;
+
+template <template <typename...> typename F,
+          template <typename...> typename C, typename... S>
+struct transform<F, C<S...>> {
+    using type = mixed_flatten_t<C<typename F<S>::type...>>;
+};
+
+template <template <typename...> typename F, typename C>
+using transform_t = typename transform<F, C>::type;
+
+
+
 
 
 /**
  * @UTILITY push_front, push_back (easy)
  */
-template <typename...>
+template <typename, typename...>
 struct push_front;
 
 template <template <typename...> typename C,
-typename... R, typename... S>
+          typename... R, typename... S>
 struct push_front<C<S...>, R...> {
     using type = C<R..., S...>;
 };
@@ -192,7 +279,7 @@ template <typename C, typename... R>
 using push_front_t = typename push_front<C, R...>::type;
 
 
-template <typename...>
+template <typename, typename...>
 struct push_back;
 
 template <template <typename...> typename C,
@@ -211,7 +298,7 @@ using push_back_t = typename push_back<C, R...>::type;
 /**
  * @UTILITY pop_front, pop_back (easy)
  */
-template <typename...>
+template <typename>
 struct pop_front;
 
 template <template <typename...> typename C,
@@ -224,13 +311,13 @@ template <typename C>
 using pop_front_t = typename pop_front<C>::type;
 
 
-template <typename...>
+template <typename>
 struct pop_back;
 
 template <template <typename...> typename C,
           typename... S>
 struct pop_back<C<S...>> {
-    using type = reverse_t<pop_front_t<reverse_t<C<S...>>>>; // Ar, I'm a pirate!
+    using type = reverse_t<pop_front_t<reverse_t<C<S...>>>>;
 };
 
 template <typename C>
@@ -243,7 +330,7 @@ using pop_back_t = typename pop_back<C>::type;
 /**
  * @ACCESS front, back (easy)
  */
-template <typename...>
+template <typename>
 struct front;
 
 template <template <typename...> typename C,
@@ -256,7 +343,7 @@ template <typename C>
 using front_t = typename front<C>::type;
 
 
-template <typename...>
+template <typename>
 struct back;
 
 template <template <typename...> typename C,
@@ -330,7 +417,7 @@ constexpr std::size_t size_v = size<C>::value;
 /**
  * @UTILITY instance (easy)
  */
-template <template <typename...> typename N, typename...>
+template <template <typename...> typename N, typename>
 struct instance;
 
 template <template <typename...> typename N,
@@ -723,11 +810,11 @@ using exclude_void_t = exclude_each_t<std::is_void, C>;
 template <template <typename...> typename P, typename C>
 using exclude_empty_t = exclude_each_t<std::is_empty, C>;
 
-template <template <typename...> typename P, typename C, typename... B>
-using include_subclass_t = b_exclude_each_t<std::is_void, C, B...>;
+template <template <typename...> typename P, typename C, typename B>
+using include_subclass_t = b_include_each_t<std::is_base_of, C, B>;
 
-template <template <typename...> typename P, typename C, typename... B>
-using exclude_subclass_t = b_exclude_each_t<std::is_empty, C, B...>;
+template <template <typename...> typename P, typename C, typename B>
+using exclude_subclass_t = b_exclude_each_t<std::is_base_of, C, B>;
 
 
 
@@ -1158,7 +1245,7 @@ constexpr bool bv_none_of_v = bv_none_of<P, C, TB>::value;
  * @UTILITY contains_all, contains_any, contains_none, (hard)
  * Checks if a container contains all/any/none given types
  */
-template <typename...>
+template <typename, typename...>
 struct contains_all;
 
 template <template <typename...> typename C, typename... S,
@@ -1179,7 +1266,7 @@ struct contains_all<C<S...>> {
 
 
 
-template <typename...>
+template <typename, typename...>
 struct contains_any;
 
 template <template <typename...> typename C, typename... S,
@@ -1200,7 +1287,7 @@ struct contains_any<C<S...>> {
 
 
 
-template <typename...>
+template <typename, typename...>
 struct contains_none;
 
 template <template <typename...> typename C, typename... S,
@@ -1218,6 +1305,94 @@ template <template <typename...> typename C, typename... S>
 struct contains_none<C<S...>> {
     enum { value = true };
 };
+
+
+
+template <typename, typename>
+struct v_contains_all;
+
+template <template <typename...> typename C, typename... S,
+          template <typename...> typename A, typename T, typename... Ts>
+struct v_contains_all<C<S...>, A<T, Ts...>> {
+    enum {
+        value = std::conditional_t<
+                b_any_of<std::is_same, C<S...>, T>::value,
+                v_contains_all<C<S...>, A<Ts...>>,
+                std::false_type>::value
+    };
+};
+
+template <template <typename...> typename C, typename... S,
+          template <typename...> typename A>
+struct v_contains_all<C<S...>, A<>> {
+    enum { value = true };
+};
+
+
+
+template <typename, typename>
+struct v_contains_any;
+
+template <template <typename...> typename C, typename... S,
+          template <typename...> typename A, typename T, typename... Ts>
+struct v_contains_any<C<S...>, A<T, Ts...>> {
+    enum {
+        value = std::conditional_t<
+                b_any_of<std::is_same, C<S...>, T>::value,
+                std::true_type,
+                v_contains_any<C<S...>, A<Ts...>>>::value
+    };
+};
+
+template <template <typename...> typename C, typename... S,
+          template <typename...> typename A>
+struct v_contains_any<C<S...>, A<>> {
+    enum { value = false };
+};
+
+
+
+template <typename, typename>
+struct v_contains_none;
+
+template <template <typename...> typename C, typename... S,
+          template <typename...> typename A, typename T, typename... Ts>
+struct v_contains_none<C<S...>, A<T, Ts...>> {
+    enum {
+        value = std::conditional_t<
+                b_any_of<std::is_same, C<S...>, T>::value,
+                std::false_type,
+                v_contains_none<C<S...>, A<Ts...>>>::value
+    };
+};
+
+template <template <typename...> typename C, typename... S,
+          template <typename...> typename A>
+struct v_contains_none<C<S...>, A<>> {
+    enum { value = true };
+};
+
+
+
+template <typename C, typename... Ts>
+constexpr bool contains_all_v = contains_all<C, Ts...>::value;
+
+template <typename C, typename... Ts>
+constexpr bool contains_any_v = contains_any<C, Ts...>::value;
+
+template <typename C, typename... Ts>
+constexpr bool contains_none_v = contains_none<C, Ts...>::value;
+
+template <typename C, typename A>
+constexpr bool v_contains_all_v = v_contains_all<C, A>::value;
+
+template <typename C, typename A>
+constexpr bool v_contains_any_v = v_contains_any<C, A>::value;
+
+template <typename C, typename A>
+constexpr bool v_contains_none_v = v_contains_none<C, A>::value;
+
+
 
 
 }

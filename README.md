@@ -14,8 +14,9 @@ In generic.hpp so far:
 * is_template_instantiation
 * join
 * reverse
-* transform
-* flatten (uses sfinae)
+* map (1 to 1)
+* flatten, mixed_flatten, deep_flatten
+* transform (1 to many)
 * push_front, push_back
 * pop_front, pop_back
 * front, back
@@ -38,3 +39,4 @@ In generic.hpp so far:
   * av_all_of, av_any_of, av_none_of
   * bv_all_of, bv_any_of, bv_none_of
 * contains_all, contains_any, contains_none
+  * v_contains_all, v_contains_any, v_contains_none

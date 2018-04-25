@@ -1,0 +1,10 @@
+//
+// Created by elbru on 24/04/2018.
+//
+
+#ifndef METAPROGRAMMING_COUNTER_HPP
+#define METAPROGRAMMING_COUNTER_HPP
+
+
+
+#endif //METAPROGRAMMING_COUNTER_HPP
