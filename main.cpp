@@ -7,6 +7,7 @@
 
 #include "typelist.hpp"
 #include "generic.hpp"
+#include "counter.hpp"
 
 using namespace generic;
 
