@@ -1,9 +1,9 @@
 #include "internal_id.hpp"
 
-#include "functional"
+#include <functional>
 
 template <typename D>
-static int internal_id<D>::_id_counter =  1;
+int internal_id<D>::_id_counter =  1;
 
 template <typename D>
 internal_id<D>::internal_id():
@@ -16,7 +16,7 @@ internal_id<D>::internal_id(const internal_id<D>&):
 }
 
 template <typename D>
-internal_id<D>::internal_id(internal_id<D>&& other):
+internal_id<D>::internal_id(internal_id<D>&& other) noexcept:
     _internal_id(std::move(other._internal_id)) {
 }
 

@@ -63,6 +63,38 @@ constexpr bool is_template_instantiation_v = is_template_instantiation<T>::value
 
 
 /**
+ * @UTILITY is_subclass_of (trivial)
+ */
+template <typename T, typename B>
+struct is_subclass_of {
+    enum { value = !is_base_of<B, T>::value };
+};
+
+template <typename T, typename B>
+constexpr bool is_subclass_of_v = is_subclass_of<T, B>::value;
+
+
+
+
+
+/**
+ * @UTILITY is_subclass
+ */
+template <typename T>
+struct is_subclass {
+    enum { value = false }
+};
+
+template <typename T, typename Super>
+struct is_subclass<T> {
+  private:
+    
+}
+
+
+
+
+/**
  * @UTILITY join (average)
  */
 template <typename...>

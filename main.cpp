@@ -8,6 +8,7 @@
 #include "typelist.hpp"
 #include "generic.hpp"
 #include "counter.hpp"
+#include "coords.hpp"
 
 using namespace generic;
 
@@ -119,6 +120,12 @@ void print_demangler_2() {
     std::cout << std::endl;
 }
 
+template <typename T, std::size_t N>
+constexpr std::size_t array_size(const T(&array)[N]) {
+    char (&array_size_impl(const T(&array)[N]))[N];
+    return sizeof(array_size_impl(array));
+}
+
 void print_demangler_3() {
     t_ints ints;
     t_reve reve;
@@ -141,5 +148,6 @@ int main(){
     print_demangler_1();
     print_demangler_2();
     print_demangler_3();
+    test_coords();
     return 0;
 }
