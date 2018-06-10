@@ -77,48 +77,22 @@ using strip_measure_t = typename strip_measure<M>::type;
 
 
 
-template <typename M, int V, int Q>
+template <typename M, int V>
 struct fill_measure;
 
 template <template <typename, int...> typename Measure,
-          typename T, int... D, int V, int Q>
-struct fill_measure<Measure<T, D...>, V, Q> {
-  using type = typename fill_measure<Measure<T, V, D...>, V, Q - 1>::type;
-};
-
-template <template <typename, int...> typename Measure,
           typename T, int... D, int V>
-struct fill_measure<Measure<T, D...>, V, 0> {
-  using type = Measure<T, D...>;
+struct fill_measure<Measure<T, D...>, V> {
+  using type = Measure<T, (D * 0 + V)...>;
 };
 
 template <typename M, int V, int Q>
-using fill_measure_t = typename fill_measure<M, V, Q>::type;
-
-
-
-template <typename M, int Q>
-struct scalar_measure;
-
-template <template <typename M, int...> typename Measure,
-          typename T, int... D, int Q>
-struct scalar_measure<Measure<T, D...>, Q> {
-  using type = typename fill_measure<Measure<T>, 0, Q>::type;
-};
-
-template <typename M, int Q>
-using scalar_measure_t = typename scalar_measure<M, Q>::type;
+using fill_measure_t = typename fill_measure<M, V>::type;
 
 
 
 template <typename M>
-struct scalar;
-
-template <template <typename, int...> typename Measure,
-          typename T, int... D>
-struct scalar<Measure<T, D...>> {
-  using type = typename scalar_measure<Measure<T>, sizeof...(D)>::type;
-};
+struct scalar : fill_measure<M, 0> {};
 
 template <typename M>
 using scalar_t = typename scalar<M>::type;
@@ -134,6 +108,15 @@ struct is_measure<Measure<T, D...>> : std::true_type {};
 
 template <typename M>
 static constexpr bool is_measure_v = is_measure<M>::value;
+
+
+
+template <typename M>
+struct is_scalar : std::integral_constant<bool,
+  is_measure_v<M> && std::is_same_v<M, scalar_t<M>>> {};
+
+template <typename M>
+static constexpr bool is_scalar_v = is_scalar<M>::value;
 
 
 
@@ -155,6 +138,24 @@ using enable_if_measure_t = typename enable_if_measure<M>::type;
 
 template <typename... M>
 using enable_if_measures_t = typename enable_if_measures<M...>::type;
+
+
+
+template <typename A>
+struct enable_if_arithmetic
+  : std::enable_if<!enforce_arithmetic || std::is_arithmetic_v<A>, A> {};
+
+template <typename A>
+using enable_if_arithmetic_t = typename enable_if_arithmetic<A>::type;
+
+
+
+template <typename M>
+struct enable_if_scalar
+  : std::enable_if<is_scalar_v<M>, M> {};
+
+template <typename M>
+using enable_if_scalar_t = typename enable_if_scalar<M>::type;
 
 } // detail
 
@@ -270,7 +271,8 @@ public:
   using measure_type = measure<T, D...>;
   using self_type = measure<T, D...>;
   using stripped_type = measure<T>;
-  using scalar_type = detail::scalar_t<self_type>;
+  using scalar_type = measure<T, (D * 0)...>;
+  using inverse_type = measure<T, (-D)...>;
 
 private:
   using self_t = self_type;
@@ -290,15 +292,15 @@ public:
   measure(const T& number) : value_(number) {};
 
   inline constexpr
-  measure(T&& number) : value_(std::move(number)) {};
+  measure(T&& number) noexcept : value_(std::move(number)) {};
 
   template <typename M, typename = detail::enable_if_measure_t<M>>
   inline constexpr explicit
-  measure(const M& other) : value_(other.value_) {}
+  measure(const M& other) = delete;
 
   template <typename M, typename = detail::enable_if_measure_t<M>>
-  inline constexpr explicit
-  measure(M&& other) : value_(std::move(other.value_)) {}
+  inline constexpr explicit // this might be sufficient
+  measure(M&& other) = delete;
 
   inline constexpr self_t&
   operator=(const self_t& other) = default;
@@ -316,7 +318,15 @@ public:
     return this->value_ = std::move(number), *this;
   }
 
-  inline constexpr
+  template <typename M, typename = detail::enable_if_measure_t<M>>
+  inline constexpr self_t&
+  operator=(const M& other) = delete;
+
+  template <typename M, typename = detail::enable_if_measure_t<M>>
+  inline constexpr self_t& // this might be sufficient
+  operator=(M&& other) noexcept = delete;
+
+  inline constexpr explicit
   operator T() const {
     return this->value_;
   }
@@ -324,6 +334,12 @@ public:
   inline constexpr explicit
   operator bool() const {
     return static_cast<bool>(this->value_);
+  }
+
+  template <typename A, typename = detail::enable_if_arithmetic_t<A>>
+  inline constexpr explicit
+  operator A() const {
+    return static_cast<A>(this->value_);
   }
 
   inline constexpr bool
@@ -460,8 +476,33 @@ public:
 
   template <typename M, typename = detail::enable_if_measure_t<M>>
   inline constexpr M
-  to() const {
+  as() const {
     return static_cast<M>(*this);
+  }
+
+  inline constexpr T
+  from() const {
+    return this->value_;
+  }
+
+  friend inline constexpr self_t
+  operator*(const self_t& m, const T& scalar) {
+    return m.value_ * scalar;
+  }
+
+  friend inline constexpr self_t
+  operator*(const T& scalar, const self_t& m) {
+    return scalar * m.value_;
+  }
+
+  friend inline constexpr self_t
+  operator/(const self_t& m, const T& scalar) {
+    return m.value_ / scalar;
+  }
+
+  friend inline constexpr inverse_type
+  operator/(const T& scalar, const self_t& m) {
+    return scalar / m.value_;
   }
 };
 

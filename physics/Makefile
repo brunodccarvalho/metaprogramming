@@ -53,7 +53,7 @@ mkdir:
 	@mkdir -p bin
 
 clean: check
-	@rm -i $(OUT)
+	@rm -i $(OUT) $(OBJECTS)
 
 check:
 	@echo "Out: " $(OUT)
